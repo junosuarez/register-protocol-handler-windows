@@ -5,7 +5,8 @@ register protocol handlers on Windows
 ```js
 var registerProtocolHandler = require('register-protocol-handler-windows')
 
-var register = registerProtocolHandler('foo', 'c:\\foo.exe', 'The Foo Protocol')
+var shellCommand = '"c:\\foo.exe" "%1"' // %1 gets replaced with the URL
+var register = registerProtocolHandler('foo', shellCommand, 'The Foo Protocol')
 
 register.then(function () {
   console.log('registered ok!')
