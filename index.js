@@ -27,6 +27,7 @@ var _register = edge(function () {/*
       string name = (string) argv["name"];
 
       Registry.SetValue("HKEY_CLASSES_ROOT\\"+protocol, "", name);
+      Registry.SetValue("HKEY_CLASSES_ROOT\\"+protocol, "URL Protocol", "");
       Registry.SetValue("HKEY_CLASSES_ROOT\\"+protocol+"\\shell\\open\\command", "", path);
 
       return null;
@@ -34,6 +35,7 @@ var _register = edge(function () {/*
     }
   }
 */})
+
 
 function checkE(protocol) {
   return getE('HKEY_CLASSES_ROOT\\'+protocol)
