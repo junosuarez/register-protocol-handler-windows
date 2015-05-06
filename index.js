@@ -1,26 +1,45 @@
-var registry = require('newt')(require('winreg'))
 var scheme = /^[a-zA-Z][a-zA-Z0-9\+\-\.]*$/ // http://tools.ietf.org/html/rfc3986 Appendix A
 var Promise = require('polyfill-promise')
-var promisify = require('promisify')
+var edge = require('pr-edge')
 
-function get(x) {
-  return new Promise(function (resolve, reject) {
-    return registry({hive: 'HKCR', key: '\\' + x}).keys(function (e, i) {
-      if (e) { return reject(e) }
-        console.log(x, i)
-      resolve(i)
-    })
-  })
-}
+var getE = edge(function () {/*
+  using Microsoft.Win32;
+  using System.Threading.Tasks;
 
-function set(n, k, t, v) {
-  return new Promise(function (resolve, reject) {
-    return registry({hive: 'HKCR', key: '\\' + n}).set(k, t, v, function (e, r) {
-      console.log(n, k, t, v)
-      console.log('  ', e, r)
-      return resolve(r)
+  public class Startup
+  {
+    public async Task<object> Invoke(object path) { 
+      return Registry.GetValue((string) path, "", null);
+    }
+  }
+*/})
+
+var _register = edge(function () {/*
+  using Microsoft.Win32;
+  using System.Threading.Tasks;
+  using System.Collections.Generic;
+
+  public class Startup
+  {
+    public async Task<object> Invoke(IDictionary<string, object> argv) { 
+      string protocol = (string) argv["protocol"];
+      string path = (string) argv["path"];
+      string name = (string) argv["name"];
+
+      Registry.SetValue("HKEY_CLASSES_ROOT\\"+protocol, "", name);
+      Registry.SetValue("HKEY_CLASSES_ROOT\\"+protocol+"\\shell\\open\\command", "", path);
+
+      return null;
+
+    }
+  }
+*/})
+
+function checkE(protocol) {
+  return getE('HKEY_CLASSES_ROOT\\'+protocol)
+    .then(function (exists) {
+      return !!exists
     })
-  })
 }
 
 function registerProtocolHandlerWindows (protocol, path, name) {
@@ -35,30 +54,16 @@ function registerProtocolHandlerWindows (protocol, path, name) {
       throw new Error('missing required parameter `name`')
     }
 
-    return set(protocol, '', 'REG_SZ', name).then(function () {
-      return set(protocol, 'URL Protocol', 'REG_SZ', '')
-    }).then(function () {
-      return set(protocol + '\\shell\\open\\command', '', 'REG_SZ', path)
+    _register({protocol: protocol, path: path, name: name}).then(null, function (err) {
+      if (err.name = 'System.UnauthorizedAccessException') {
+        throw new Error('Unauthorized access: ' + err.Message +' Run process ' + process.argv[0] + ' as administrator.')
+      }
+      else throw err
     })
+    .then(resolve, reject)
 
-    //throw new Error('not implemented')
-  })
-}
-
-function check(protocol) {
-  return new Promise(function (resolve, reject) {
-    if (typeof protocol !== 'string' || !scheme.test(protocol)) {
-      throw new Error('required parameter `protocol` must be a valid uri scheme')
-    }
-    return resolve(get(protocol)
-      .then(function (x) {
-        return !!x && x.length > 0
-      })
-      .catch(function () {
-        return false
-      }))
   })
 }
 
 module.exports = registerProtocolHandlerWindows
-module.exports.check = check
+module.exports.check = checkE
