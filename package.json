@@ -1,9 +1,15 @@
 {
   "name": "register-protocol-handler-windows",
   "author": "jden <jason@denizac.org>",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "register protocol handlers on Windows",
-  "keywords": ["registerprotocolhandler", "protocol", "registry", "handler", "register"],
+  "keywords": [
+    "registerprotocolhandler",
+    "protocol",
+    "registry",
+    "handler",
+    "register"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "mochi"
